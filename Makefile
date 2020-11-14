@@ -47,11 +47,23 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr htmlcov/
 	rm -fr .pytest_cache
 
+black: ## format with black
+	black --line-length 78 wbn setup.py tests
+
+isort: ## format and sort imports
+	isort --multi-line 3 --trailing-comma .
+
 lint: ## check style with flake8
 	flake8 wbn tests
 
+mypy: ## lint with mypy
+	mypy wbn
+
 test: ## run tests quickly with the default Python
 	pytest
+
+test-verbose: ## run tests on every Python version with tox
+	pytest -vv --cov=wbn --cov-report term-missing
 
 test-all: ## run tests on every Python version with tox
 	tox

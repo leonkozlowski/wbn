@@ -3,9 +3,6 @@
 """Tests for `wbn` package."""
 
 import pytest
-from click.testing import CliRunner
-
-from wbn import cli
 
 
 @pytest.fixture

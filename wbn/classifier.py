@@ -2,7 +2,7 @@
 import itertools
 import logging
 from collections import Counter, defaultdict
-from typing import List
+from typing import DefaultDict, Dict, List
 
 import networkx as nx
 import numpy as np
@@ -25,7 +25,7 @@ class WBN(object):
 
     def __init__(self, size: int = 2):
         self.size = size
-        self.fits = list()
+        self.fits = list()  # type: List[Fit]
 
     def fit(self, data: np.ndarray, target: np.ndarray) -> List[Fit]:
         """Builds directed acyclic graphs and corpora for
@@ -45,14 +45,14 @@ class WBN(object):
             Array of dag & corpus classifications
 
         """
-        by_class = defaultdict(list)
+        by_class = defaultdict(list)  # type: DefaultDict
         for idx, entry in enumerate(data):
             # Establish universe for a target
             by_class[target[idx]] += entry
 
         for cls, keywords in by_class.items():
             # Create a weighted dict for weighting
-            weighted = dict(Counter(keywords))
+            weighted = dict(Counter(keywords))  # type: Dict[str, int]
 
             cls_dag = nx.DiGraph()
             matrix = list(
@@ -74,7 +74,7 @@ class WBN(object):
 
         return self.fits
 
-    def predict(self, data: np.ndarray):
+    def predict(self, data: np.ndarray) -> List[int]:
         """Predict class of for keywords in 'data'.
 
         Parameters
@@ -86,7 +86,7 @@ class WBN(object):
         # corpus = self._make_corpus()
         # for entry in data:
         #     keywords = [word in corpus for word in entry]
-        prediction = []
+        prediction = []  # type: List[int]
 
         return prediction
 

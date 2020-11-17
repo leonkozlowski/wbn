@@ -1,1 +1,1 @@
-"""Configuration."""
+"""Configurations and Constants."""

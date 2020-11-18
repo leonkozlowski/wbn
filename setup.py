@@ -24,6 +24,8 @@ test_requirements = [
     "pytest>=3",
 ]
 
+extras = {"viz": ["matplotlib>=3.3.3"]}
+
 setup(
     author="Leon Kozlowski",
     author_email="leonkozlowski@gmail.com",
@@ -46,6 +48,7 @@ setup(
         ],
     },
     install_requires=requirements,
+    extras_requires=extras,
     license="MIT license",
     long_description=readme + "\n\n" + history,
     include_package_data=True,

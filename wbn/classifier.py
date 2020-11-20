@@ -20,7 +20,7 @@ class WBN(object):
     def __init__(self, size: int = 2):
         self.size = size
         self.fits = list()  # type: List[Fit]
-        self.targets = dict()  # type: Dict[str, int]
+        self.targets = dict()  # type: Dict[Any, int]
 
     def fit(self, data: np.ndarray, target: np.ndarray) -> List[Fit]:
         """Builds directed acyclic graphs and corpora for
@@ -78,7 +78,13 @@ class WBN(object):
             assert cls_dag.is_directed()
 
             # Store in instance variable for prediction
-            self.fits.append(Fit(cls_dag, list(set(keywords))))
+            self.fits.append(
+                Fit(
+                    dag=cls_dag,
+                    cls=cls,
+                    corpus=list(set(keywords)),
+                )
+            )
 
         return self.fits
 
@@ -93,6 +99,11 @@ class WBN(object):
         target : np.ndarray
             Array of target classifications
 
+        Returns
+        -------
+        List[int]
+            Array of instance class predictions
+
         """
         corpus = list(
             set(
@@ -105,7 +116,7 @@ class WBN(object):
         instances = []  # type: List[Dict[str, int]]
         for entry in data:
             instances.append(
-                dict(Counter([word for word in entry if word in corpus]))
+                Counter([word for word in entry if word in corpus])
             )
 
         predictions = [self.dag_traverse(instance) for instance in instances]
@@ -127,7 +138,7 @@ class WBN(object):
             Predicted classification of instance
 
         """
-        # dags = [fit_class.dag for fit_class in self.fits]
+        # for fit in self.fits:
 
         return 1
 

@@ -20,4 +20,5 @@ class Fit(NamedTuple):
     """Fit class output holding DAG and Corpus."""
 
     dag: nx.DiGraph
+    cls: str
     corpus: List[str]

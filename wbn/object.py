@@ -13,7 +13,9 @@ class Attribute(NamedTuple):
     negative: int
 
     def __repr__(self) -> str:
-        return f"{self.word}:{round(self.weight, 4)}:[{self.positive}:{self.negative}]"
+        return "<{}:{}:[{}:{}]>".format(
+            self.word, round(self.weight, 4), self.positive, self.negative
+        )
 
 
 class Fit(NamedTuple):

@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 
 """Tests for `wbn` package."""
+from collections import defaultdict
 from unittest import TestCase
+
+import pytest
 
 from tests.data.sample import SAMPLE_DATA, SAMPLE_TARGET
 from wbn.classifier import WBN
+from wbn.errors import InstanceCountError
 
 
 class TestWBN(TestCase):
@@ -34,3 +38,16 @@ class TestWBN(TestCase):
         assert isinstance(self.test_wbn.targets, dict)
         assert "program" in self.test_wbn.targets
         assert "variable" in self.test_wbn.targets
+
+    def test_update(self):
+        """Unit test for '_update(...)'."""
+        test_parent = defaultdict(dict)
+        test_child = {"foo": (1, 2)}
+        result = self.test_wbn._update(parent=test_parent, child=test_child)
+
+        assert "foo" in result
+
+    def test_validate(self):
+        """Unit test for '_validate(...)'."""
+        with pytest.raises(InstanceCountError):
+            self.test_wbn.fit(data=SAMPLE_DATA, target=SAMPLE_TARGET[:1])

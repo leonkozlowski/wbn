@@ -12,16 +12,18 @@ class TestAttribute(TestCase):
     """Unit test suite for Attribute."""
 
     def setUp(self) -> None:
-        self.test_attribute = Attribute("foo", 0.5)
+        self.test_attribute = Attribute("foo", 0.5, 1, 1)
 
     def test_values(self):
         """Unit test for dot notation values."""
         assert self.test_attribute.word == "foo"
         assert self.test_attribute.weight == 0.5
+        assert self.test_attribute.positive == 1
+        assert self.test_attribute.negative == 1
 
     def test_repr(self):
         """Unit test for string representation."""
-        assert self.test_attribute.__repr__() == "foo:0.5"
+        assert self.test_attribute.__repr__() == "foo:0.5:[1:1]"
 
 
 class TestFit(TestCase):

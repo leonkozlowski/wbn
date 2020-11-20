@@ -2,7 +2,7 @@
 import itertools
 import logging
 from collections import Counter, defaultdict
-from typing import DefaultDict, Dict, List
+from typing import Any, DefaultDict, Dict, List, Tuple
 
 import networkx as nx
 import numpy as np
@@ -15,14 +15,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class WBN(object):
-    """Weighted Bayesian Network Classifier.
-
-    Parameters
-    ----------
-    size : int
-        Size of node combinations
-
-    """
+    """Weighted Bayesian Network Classifier."""
 
     def __init__(self, size: int = 2):
         self.size = size
@@ -39,7 +32,7 @@ class WBN(object):
             Array of annotated keywords
 
         target : np.ndarray
-            Array of encoded target classifications
+            Array of target classifications
 
         Returns
         -------
@@ -47,26 +40,34 @@ class WBN(object):
             Array of dag & corpus classifications
 
         """
-        # Failing validation prevents fitting
+        # Failure to validate prevents model fitting
         self._validate(data, target)
 
         self._encode(target=target)
-        by_class = defaultdict(list)  # type: DefaultDict
+        by_class = defaultdict(dict)  # type: DefaultDict
         for idx, entry in enumerate(data):
             # Establish universe for all targets
-            # TODO: Build probability table HERE
-            by_class[target[idx]] += entry
+            weighted = Counter(entry)  # type: Dict[str, int]
+
+            # Injects value for probability table
+            by_word = {k: (v, 1) for k, v in weighted.items()}
+            by_class[target[idx]] = self._update(
+                parent=by_class[target[idx]], child=by_word
+            )
 
         for cls, keywords in by_class.items():
             # Create a weighted dict for weighting
-            weighted = dict(Counter(keywords))  # type: Dict[str, int]
-
             cls_dag = nx.DiGraph()
             matrix = list(
                 itertools.combinations(
                     [
-                        Attribute(word, count / len(keywords))
-                        for word, count in weighted.items()
+                        Attribute(
+                            word=word,
+                            weight=count / len(keywords),
+                            positive=positive,
+                            negative=len(data) - positive,
+                        )
+                        for word, (count, positive) in keywords.items()
                     ],
                     self.size,
                 )
@@ -81,13 +82,16 @@ class WBN(object):
 
         return self.fits
 
-    def predict(self, data: np.ndarray) -> List[int]:
+    def predict(self, data: np.ndarray, target: np.ndarray) -> List[int]:
         """Predict class of for keywords in 'data'.
 
         Parameters
         ----------
         data : np.ndarray
             Array of cleaned words from input.
+
+        target : np.ndarray
+            Array of target classifications
 
         """
         corpus = list(
@@ -145,6 +149,27 @@ class WBN(object):
             self.targets[tgt] = idx
 
         return bool(self.targets)
+
+    @staticmethod
+    def _update(
+        parent: DefaultDict, child: Dict[Any, Tuple[int, int]]
+    ) -> DefaultDict:
+        """Unpacks parent/child tuples and preforms addition to account
+        for both instance frequency and probability.
+
+        Parameters
+        ----------
+        parent : DefaultDict
+            Parent 'by_class' master dictionary
+
+        child : Dict[str, tuple]
+            Attribute to be distributed into parent
+
+        """
+        for word, val in child.items():
+            parent[word] = tuple(map(sum, zip(val, parent.get(word, (0, 0)))))
+
+        return parent
 
     @staticmethod
     def _validate(data: np.ndarray, target: np.ndarray) -> None:

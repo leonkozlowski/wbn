@@ -17,6 +17,11 @@ class Attribute(NamedTuple):
             self.word, round(self.weight, 4), self.positive, self.negative
         )
 
+    @property
+    def total(self) -> int:
+        """Calculates total positives and negatives."""
+        return self.positive + self.negative
+
 
 class Fit(NamedTuple):
     """Fit class output holding DAG and Corpus."""

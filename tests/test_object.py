@@ -23,14 +23,14 @@ class TestAttribute(TestCase):
 
     def test_repr(self):
         """Unit test for string representation."""
-        assert self.test_attribute.__repr__() == "foo:0.5:[1:1]"
+        assert self.test_attribute.__repr__() == "<foo:0.5:[1:1]>"
 
 
 class TestFit(TestCase):
     """Unit test suite for Fit."""
 
     def setUp(self) -> None:
-        self.text_fit = Fit(nx.DiGraph(), ["hello", "world"])
+        self.text_fit = Fit(nx.DiGraph(), "foo-bar", ["hello", "world"])
 
     def test_values(self):
         """Unit test for dot notation values."""

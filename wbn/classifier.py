@@ -119,28 +119,10 @@ class WBN(object):
                 Counter([word for word in entry if word in corpus])
             )
 
-        predictions = [self.dag_traverse(instance) for instance in instances]
+        # Generate predictions for each instance
+        predictions = list(map(self._evaluate, instances))
 
         return predictions
-
-    def dag_traverse(self, instance: Dict[str, int]) -> int:
-        """Iterate through and traverse class level dags
-        in order to establish weighted match score.
-
-        Parameters
-        ----------
-        instance : Dict[str, int]
-            Instance of universe filtered words
-
-        Returns
-        -------
-        int
-            Predicted classification of instance
-
-        """
-        # for fit in self.fits:
-
-        return 1
 
     def _encode(self, target: List[str]) -> bool:
         """Encodes string targets to mapped integer.
@@ -160,6 +142,74 @@ class WBN(object):
             self.targets[tgt] = idx
 
         return bool(self.targets)
+
+    def _evaluate(self, instance: Dict[str, int]) -> int:
+        """Iterate through and traverse class level dags
+        in order to establish weighted match score.
+
+        Parameters
+        ----------
+        instance : Dict[str, int]
+            Instance of universe filtered words
+
+        Returns
+        -------
+        int
+            Predicted classification of instance
+
+        """
+        scores = []  # type: List[Tuple[int, float]]
+        for fit in self.fits:
+            fit_score = 0
+            for edge in fit.dag.edges:
+                fit_score += self._score_edge(
+                    edge=edge, instance=instance
+                )  # type: ignore
+
+            # Compile scores for evaluation
+            scores.append((self.targets[fit.cls], fit_score))
+
+        prediction = max(scores, key=lambda score: score[1])
+
+        return prediction[0]
+
+    @staticmethod
+    def _score_edge(
+        edge: Tuple[Attribute, Attribute], instance: Dict[str, int]
+    ) -> float:
+        """Calculates score for edge of dag via parent/child node in order to
+        identify correlation to instance.
+
+        Parameters
+        ----------
+        edge : Tuple[Attribute, Attribute]
+            Edge parent/child node of dag
+
+        instance : Dict[str, int]
+            Instance to be evaluated against edge
+
+        Returns
+        -------
+        float
+            Edge score against instance
+
+        """
+        parent, child = edge
+        edge_weight = (parent.weight + child.weight) * (
+            (parent.positive + child.positive) / (parent.total + child.total)
+        )
+
+        edge_words = [parent.word, child.word]
+        if any(word not in instance for word in edge_words):
+            return 0  # Parent/Child edge not valid
+
+        # Generate total number of words in instance
+        total = sum(instance.values())
+        instance_word_weight = (
+            instance.get(parent.word, 0) + instance.get(child.word, 0)
+        ) / total
+
+        return instance_word_weight * (1 + edge_weight)
 
     @staticmethod
     def _update(

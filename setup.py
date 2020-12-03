@@ -13,6 +13,7 @@ with open("HISTORY.rst") as history_file:
 requirements = [
     "Click>=7.0",
     "networkx>=2.5",
+    "nltk>=3.5",
     "numpy>=1.19.4",
 ]
 
@@ -24,17 +25,23 @@ test_requirements = [
     "pytest>=3",
 ]
 
+extras = {
+    "extras": [
+        "matplotlib>=3.3.3",
+        "scikit-learn>=0.23.2",
+    ],
+}
+
 setup(
     author="Leon Kozlowski",
     author_email="leonkozlowski@gmail.com",
-    python_requires=">=3.5",
+    python_requires=">=3.6",
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
@@ -46,6 +53,7 @@ setup(
         ],
     },
     install_requires=requirements,
+    extras_requires=extras,
     license="MIT license",
     long_description=readme + "\n\n" + history,
     include_package_data=True,

@@ -1,42 +1,63 @@
 """Reusable Objects for WBN."""
-from typing import Dict, List, NamedTuple, Union
+from typing import List, NamedTuple
 
 import networkx as nx
 
 
 class Attribute(NamedTuple):
-    """Attribute Class representing Word & Weight."""
+    """Attribute class representing Word & Weight."""
 
     word: str
-    weight: Union[int, float]
+    weight: float
+    positive: int
+    negative: int
 
     def __repr__(self) -> str:
-        return f"{self.word}:{self.weight}"
-
-
-class Classification(object):
-    """Classification Base Class for Code Generation."""
-
-    index: int
-    name: str
-
-
-class Fit(NamedTuple):
-    """Fit class output holding DAG and Corpus."""
-
-    dag: nx.DiGraph
-    corpus: List[str]
-
-
-class Instance(dict):
-    """Facade Accessor for a Training Instance."""
+        return "<{}:{}:[{}:{}]>".format(
+            self.word, round(self.weight, 4), self.positive, self.negative
+        )
 
     @property
-    def data(self) -> List[Dict[str, int]]:
-        """Access for 'data' attribute."""
-        return self.get("data", [])
+    def total(self) -> int:
+        """Calculates total positives and negatives."""
+        return self.positive + self.negative
+
+
+class DocumentData(NamedTuple):
+    """Document 'data' entry with paragraphs and keywords."""
+
+    tokens: List[str]  # Paragraphs as cleaned tokens
+    keywords: List[str] = None  # type: ignore
+
+
+class Document(NamedTuple):
+    """Document data structure for 'data' and 'target'."""
+
+    data: DocumentData
+    target: str  # Annotated classification
+
+
+class Documents(list):
+    """Data structure to hold an access 'Document' entries."""
+
+    def __init__(self, documents: List[Document]):
+        super(Documents, self).__init__(documents)
+        self.documents = documents
+
+    @property
+    def data(self) -> List[DocumentData]:
+        """Access for 'data' elements."""
+        return [doc.data for doc in self.documents]
 
     @property
     def target(self) -> List[str]:
-        """Access for 'target' attribute."""
-        return self.get("target", [])
+        """Access for 'target' elements."""
+        return [doc.target for doc in self.documents]
+
+
+class Classification(NamedTuple):
+    """Classification output holding DAG and Corpus."""
+
+    dag: nx.DiGraph
+    cls: str
+    corpus: List[str]

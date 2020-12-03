@@ -2,13 +2,13 @@
 import itertools
 import logging
 from collections import Counter, defaultdict
-from typing import Any, DefaultDict, Dict, List, Tuple
+from typing import Any, DefaultDict, Dict, List, Optional, Tuple
 
 import networkx as nx
-import numpy as np
+from nltk import PorterStemmer
 
 from wbn.errors import InstanceCountError
-from wbn.object import Attribute, Fit
+from wbn.object import Attribute, Classification, DocumentData
 
 logging.basicConfig(level="INFO")
 _LOGGER = logging.getLogger(__name__)
@@ -19,24 +19,27 @@ class WBN(object):
 
     def __init__(self, size: int = 2):
         self.size = size
-        self.fits = list()  # type: List[Fit]
+        self.classes = list()  # type: List[Classification]
         self.targets = dict()  # type: Dict[Any, int]
+        self._reverse_encoded = dict()  # type: Dict[int, Any]
 
-    def fit(self, data: np.ndarray, target: np.ndarray) -> List[Fit]:
+    def fit(
+        self, data: List[DocumentData], target: List[str]
+    ) -> List[Classification]:
         """Builds directed acyclic graphs and corpora for
         class traversal and classification.
 
         Parameters
         ----------
-        data : np.ndarray
+        data : List[DocumentData]
             Array of annotated keywords
 
-        target : np.ndarray
+        target : List[str]
             Array of target classifications
 
         Returns
         -------
-        List[Fit]
+        List[Classification]
             Array of dag & corpus classifications
 
         """
@@ -44,28 +47,38 @@ class WBN(object):
         self._validate(data, target)
 
         self._encode(target=target)
+        stemmer = PorterStemmer()  # Instantiate stemmer
         by_class = defaultdict(dict)  # type: DefaultDict
         for idx, entry in enumerate(data):
             # Establish universe for all targets
-            weighted = Counter(entry)  # type: Dict[str, int]
+            stemmed_entry = [stemmer.stem(word) for word in entry.keywords]
+            weighted = Counter(stemmed_entry)  # type: Dict[str, int]
 
             # Injects value for probability table
             by_word = {k: (v, 1) for k, v in weighted.items()}
+            # Create a weighted dict for weighting
             by_class[target[idx]] = self._update(
                 parent=by_class[target[idx]], child=by_word
             )
 
         for cls, keywords in by_class.items():
-            # Create a weighted dict for weighting
+            total_words = sum([kw[0] for kw in keywords.values()])
             cls_dag = nx.DiGraph()
             matrix = list(
                 itertools.combinations(
                     [
                         Attribute(
                             word=word,
-                            weight=count / len(keywords),
+                            weight=count / total_words,
                             positive=positive,
-                            negative=len(data) - positive,
+                            negative=len(
+                                [
+                                    instance
+                                    for instance in target
+                                    if instance == cls
+                                ]
+                            )
+                            - positive,  # Total minus positive values
                         )
                         for word, (count, positive) in keywords.items()
                     ],
@@ -78,26 +91,23 @@ class WBN(object):
             assert cls_dag.is_directed()
 
             # Store in instance variable for prediction
-            self.fits.append(
-                Fit(
+            self.classes.append(
+                Classification(
                     dag=cls_dag,
                     cls=cls,
                     corpus=list(set(keywords)),
                 )
             )
 
-        return self.fits
+        return self.classes
 
-    def predict(self, data: np.ndarray, target: np.ndarray) -> List[int]:
+    def predict(self, data: List[DocumentData]) -> List[int]:
         """Predict class of for keywords in 'data'.
 
         Parameters
         ----------
-        data : np.ndarray
+        data : List[DocumentData]
             Array of cleaned words from input.
-
-        target : np.ndarray
-            Array of target classifications
 
         Returns
         -------
@@ -108,21 +118,39 @@ class WBN(object):
         corpus = list(
             set(
                 itertools.chain.from_iterable(
-                    fit_class.corpus for fit_class in self.fits
+                    fit_class.corpus for fit_class in self.classes
                 )
             )
         )
 
         instances = []  # type: List[Dict[str, int]]
+        stemmer = PorterStemmer()  # Instantiate stemmer
         for entry in data:
+            stemmed_entry = [stemmer.stem(word) for word in entry.tokens]
             instances.append(
-                Counter([word for word in entry if word in corpus])
+                Counter([word for word in stemmed_entry if word in corpus])
             )
 
         # Generate predictions for each instance
         predictions = list(map(self._evaluate, instances))
 
         return predictions
+
+    def reverse_encode(self, target: List[int]) -> List[str]:
+        """Reverse encodes int targets/predictions for metrics.
+
+        Parameters
+        ----------
+        target : List[int]
+            Array of encoded targets/predictions
+
+        Returns
+        -------
+        List[str]
+            Reverse encoded array of targets/predictions
+
+        """
+        return [self._reverse_encoded.get(val) for val in target]  # type: ignore
 
     def _encode(self, target: List[str]) -> bool:
         """Encodes string targets to mapped integer.
@@ -141,9 +169,13 @@ class WBN(object):
         for idx, tgt in enumerate(list(set(target))):
             self.targets[tgt] = idx
 
+        self._reverse_encoded = {v: k for k, v in self.targets.items()}
+
         return bool(self.targets)
 
-    def _evaluate(self, instance: Dict[str, int]) -> int:
+    def _evaluate(
+        self, instance: Dict[str, int], _target_class: Optional[str] = None
+    ) -> int:
         """Iterate through and traverse class level dags
         in order to establish weighted match score.
 
@@ -158,20 +190,24 @@ class WBN(object):
             Predicted classification of instance
 
         """
-        scores = []  # type: List[Tuple[int, float]]
-        for fit in self.fits:
-            fit_score = 0
-            for edge in fit.dag.edges:
-                fit_score += self._score_edge(
+        scores = dict()  # type: Dict[int, float]
+        for classification in self.classes:
+            edge_scores = []
+            for edge in classification.dag.edges:
+                edge_score = self._score_edge(
                     edge=edge, instance=instance
                 )  # type: ignore
+                if edge_score:
+                    edge_scores.append(edge_score)
 
-            # Compile scores for evaluation
-            scores.append((self.targets[fit.cls], fit_score))
+            # Summation of conditional probabilities
+            scores.update(
+                {self.targets[classification.cls]: sum(edge_scores)}
+            )
 
-        prediction = max(scores, key=lambda score: score[1])
+        prediction = max(scores, key=scores.get)  # type: ignore
 
-        return prediction[0]
+        return prediction
 
     @staticmethod
     def _score_edge(
@@ -179,6 +215,8 @@ class WBN(object):
     ) -> float:
         """Calculates score for edge of dag via parent/child node in order to
         identify correlation to instance.
+
+        Using a Bayesian approach we calculate
 
         Parameters
         ----------
@@ -194,22 +232,29 @@ class WBN(object):
             Edge score against instance
 
         """
+        # De-structure nodes of edge
         parent, child = edge
-        edge_weight = (parent.weight + child.weight) * (
-            (parent.positive + child.positive) / (parent.total + child.total)
-        )
 
-        edge_words = [parent.word, child.word]
-        if any(word not in instance for word in edge_words):
-            return 0  # Parent/Child edge not valid
+        words = [parent.word, child.word]
+        if any(word not in instance for word in words):
+            return 0  # Parent/Child edge not indicative of correlation
 
-        # Generate total number of words in instance
-        total = sum(instance.values())
-        instance_word_weight = (
-            instance.get(parent.word, 0) + instance.get(child.word, 0)
-        ) / total
+        # NOTE: Conditional probability calculation
+        # L: Class (classification)
+        # P: Parent (parent node word in edge)
+        # C: Child (child node word in edge)
+        # wp: Parent word weight of key
+        # wc: Child word weight of keywords
+        cls_given_parent = parent.positive / parent.total  # Pr(L | P)
+        cls_given_child = child.positive / child.total  # Pr(L | C)
 
-        return instance_word_weight * (1 + edge_weight)
+        weighted_joint_probability = (
+            cls_given_parent * (1 + parent.weight)
+        ) * (
+            cls_given_child * (1 + child.weight)
+        )  # Pr(L | P(wp), C(wc))
+
+        return weighted_joint_probability
 
     @staticmethod
     def _update(
@@ -233,16 +278,16 @@ class WBN(object):
         return parent
 
     @staticmethod
-    def _validate(data: np.ndarray, target: np.ndarray) -> None:
+    def _validate(data: List[DocumentData], target: List[str]) -> None:
         """Validates both 'data' and 'target' for multiple rules
         including length and value existence.
 
         Parameters
         ----------
-        data : np.ndarray
+        data : List[DocumentData]
             Array of annotated keywords
 
-        target : np.ndarray
+        target : List[str]
             Array of encoded target classifications
 
         Raises

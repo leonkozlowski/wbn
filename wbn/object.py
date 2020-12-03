@@ -23,8 +23,40 @@ class Attribute(NamedTuple):
         return self.positive + self.negative
 
 
-class Fit(NamedTuple):
-    """Fit class output holding DAG and Corpus."""
+class DocumentData(NamedTuple):
+    """Document 'data' entry with paragraphs and keywords."""
+
+    tokens: List[str]  # Paragraphs as cleaned tokens
+    keywords: List[str] = None  # type: ignore
+
+
+class Document(NamedTuple):
+    """Document data structure for 'data' and 'target'."""
+
+    data: DocumentData
+    target: str  # Annotated classification
+
+
+class Documents(list):
+    """Data structure to hold an access 'Document' entries."""
+
+    def __init__(self, documents: List[Document]):
+        super(Documents, self).__init__(documents)
+        self.documents = documents
+
+    @property
+    def data(self) -> List[DocumentData]:
+        """Access for 'data' elements."""
+        return [doc.data for doc in self.documents]
+
+    @property
+    def target(self) -> List[str]:
+        """Access for 'target' elements."""
+        return [doc.target for doc in self.documents]
+
+
+class Classification(NamedTuple):
+    """Classification output holding DAG and Corpus."""
 
     dag: nx.DiGraph
     cls: str

@@ -6,7 +6,7 @@ from unittest import TestCase
 
 import pytest
 
-from tests.data.sample import SAMPLE_DATA, SAMPLE_TARGET
+from tests.data.sample import SAMPLE_DATASET
 from wbn.classifier import WBN
 from wbn.errors import InstanceCountError
 
@@ -19,7 +19,9 @@ class TestWBN(TestCase):
 
     def test_fit(self):
         """Unit test for 'fit(...)'."""
-        result = self.test_wbn.fit(data=SAMPLE_DATA, target=SAMPLE_TARGET)
+        result = self.test_wbn.fit(
+            data=SAMPLE_DATASET.data, target=SAMPLE_DATASET.target
+        )
 
         assert len(result) == 2
 
@@ -33,7 +35,7 @@ class TestWBN(TestCase):
 
     def test_encode(self):
         """Unit test for '_encode(...)'."""
-        self.test_wbn._encode(SAMPLE_TARGET)
+        self.test_wbn._encode(SAMPLE_DATASET.target)
 
         assert isinstance(self.test_wbn.targets, dict)
         assert "program" in self.test_wbn.targets
@@ -50,4 +52,6 @@ class TestWBN(TestCase):
     def test_validate(self):
         """Unit test for '_validate(...)'."""
         with pytest.raises(InstanceCountError):
-            self.test_wbn.fit(data=SAMPLE_DATA, target=SAMPLE_TARGET[:1])
+            self.test_wbn.fit(
+                data=SAMPLE_DATASET.data, target=SAMPLE_DATASET.target[:1]
+            )

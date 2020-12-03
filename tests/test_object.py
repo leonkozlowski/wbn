@@ -5,7 +5,7 @@ from unittest import TestCase
 
 import networkx as nx
 
-from wbn.object import Attribute, Fit
+from wbn.object import Attribute, Classification
 
 
 class TestAttribute(TestCase):
@@ -26,13 +26,15 @@ class TestAttribute(TestCase):
         assert self.test_attribute.__repr__() == "<foo:0.5:[1:1]>"
 
 
-class TestFit(TestCase):
-    """Unit test suite for Fit."""
+class TestClassification(TestCase):
+    """Unit test suite for Classification."""
 
     def setUp(self) -> None:
-        self.text_fit = Fit(nx.DiGraph(), "foo-bar", ["hello", "world"])
+        self.test_classification = Classification(
+            nx.DiGraph(), "foo-bar", ["hello", "world"]
+        )
 
     def test_values(self):
         """Unit test for dot notation values."""
-        assert isinstance(self.text_fit.dag, nx.DiGraph)
-        assert self.text_fit.corpus == ["hello", "world"]
+        assert isinstance(self.test_classification.dag, nx.DiGraph)
+        assert self.test_classification.corpus == ["hello", "world"]

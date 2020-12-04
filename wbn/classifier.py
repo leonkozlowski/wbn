@@ -25,7 +25,7 @@ _LOGGER = logging.getLogger(__name__)
 class WBN(object):
     """Weighted Bayesian Network Classifier."""
 
-    def __init__(self, depth: int = 5):
+    def __init__(self, depth: float = 0.05):
         self.depth = depth
         self.classes = list()  # type: List[Classification]
         self.corpus = list()  # type: List[str]
@@ -216,9 +216,12 @@ class WBN(object):
                 sorted_edge_probabilities = sorted(
                     edge_probabilities, reverse=True, key=itemgetter(0)
                 )
-                if len(sorted_edge_probabilities) >= self.depth:
+
+                # Calculate depth
+                depth = round(len(self.corpus) * self.depth)
+                if len(sorted_edge_probabilities) >= depth:
                     # Limit probabilities to 'depth' hyper-parameter
-                    depth_limited = sorted_edge_probabilities[: self.depth]
+                    depth_limited = sorted_edge_probabilities[:depth]
 
                     # Destructure probabilities and edges
                     probabilities, edges = list(zip(*depth_limited))

@@ -1,5 +1,5 @@
 """Reusable Objects for WBN."""
-from typing import List, NamedTuple
+from typing import List, NamedTuple, Tuple
 
 import networkx as nx
 
@@ -61,3 +61,11 @@ class Classification(NamedTuple):
     dag: nx.DiGraph
     cls: str
     corpus: List[str]
+
+
+class ClassificationScore(NamedTuple):
+    """Classification score output holding class, probability and edges."""
+
+    cls: int
+    probability: float
+    edges: List[Tuple[Attribute, Attribute]]

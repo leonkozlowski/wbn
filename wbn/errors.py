@@ -19,3 +19,15 @@ class InstanceCountError(WBNException):
         return "Number of instances: {} does not match number of targets: {}".format(
             len(self.data), len(self.target)
         )
+
+
+class MaxDepthExceededError(WBNException):
+    """MaxDepthExceededError Exception."""
+
+    def __init__(self, depth: int):
+        self.depth = depth
+
+    def __str__(self) -> str:
+        return "Max probability depth of {} exceeded for all classifications".format(
+            self.depth
+        )

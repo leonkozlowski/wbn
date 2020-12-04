@@ -2,13 +2,21 @@
 import itertools
 import logging
 from collections import Counter, defaultdict
-from typing import Any, DefaultDict, Dict, List, Optional, Tuple
+from operator import itemgetter
+from typing import Any, DefaultDict, Dict, List, Tuple
 
 import networkx as nx
+import numpy as np
 from nltk import PorterStemmer
 
-from wbn.errors import InstanceCountError
-from wbn.object import Attribute, Classification, DocumentData
+from wbn.config import COMBINATION_SIZE
+from wbn.errors import InstanceCountError, MaxDepthExceededError
+from wbn.object import (
+    Attribute,
+    Classification,
+    ClassificationScore,
+    DocumentData,
+)
 
 logging.basicConfig(level="INFO")
 _LOGGER = logging.getLogger(__name__)
@@ -17,10 +25,12 @@ _LOGGER = logging.getLogger(__name__)
 class WBN(object):
     """Weighted Bayesian Network Classifier."""
 
-    def __init__(self, size: int = 2):
-        self.size = size
+    def __init__(self, depth: float = 0.05):
+        self.depth = depth
         self.classes = list()  # type: List[Classification]
+        self.corpus = list()  # type: List[str]
         self.targets = dict()  # type: Dict[Any, int]
+        self.predictions = list()  # type: List[ClassificationScore]
         self._reverse_encoded = dict()  # type: Dict[int, Any]
 
     def fit(
@@ -82,7 +92,7 @@ class WBN(object):
                         )
                         for word, (count, positive) in keywords.items()
                     ],
-                    self.size,
+                    COMBINATION_SIZE,
                 )
             )
 
@@ -115,7 +125,7 @@ class WBN(object):
             Array of instance class predictions
 
         """
-        corpus = list(
+        self.corpus = list(
             set(
                 itertools.chain.from_iterable(
                     fit_class.corpus for fit_class in self.classes
@@ -128,7 +138,9 @@ class WBN(object):
         for entry in data:
             stemmed_entry = [stemmer.stem(word) for word in entry.tokens]
             instances.append(
-                Counter([word for word in stemmed_entry if word in corpus])
+                Counter(
+                    [word for word in stemmed_entry if word in self.corpus]
+                )
             )
 
         # Generate predictions for each instance
@@ -173,9 +185,7 @@ class WBN(object):
 
         return bool(self.targets)
 
-    def _evaluate(
-        self, instance: Dict[str, int], _target_class: Optional[str] = None
-    ) -> int:
+    def _evaluate(self, instance: Dict[str, int]) -> int:
         """Iterate through and traverse class level dags
         in order to establish weighted match score.
 
@@ -190,24 +200,50 @@ class WBN(object):
             Predicted classification of instance
 
         """
-        scores = dict()  # type: Dict[int, float]
+        classification_probabilities = (
+            list()
+        )  # type: List[ClassificationScore]
         for classification in self.classes:
-            edge_scores = []
+            edge_probabilities = list()  # type: List[Tuple[float, list]]
             for edge in classification.dag.edges:
-                edge_score = self._score_edge(
+                edge_probability = self._score_edge(
                     edge=edge, instance=instance
                 )  # type: ignore
-                if edge_score:
-                    edge_scores.append(edge_score)
+                if edge_probability:
+                    edge_probabilities.append((edge_probability, edge))
 
-            # Summation of conditional probabilities
-            scores.update(
-                {self.targets[classification.cls]: sum(edge_scores)}
-            )
+                # Sort edge scores by probability
+                sorted_edge_probabilities = sorted(
+                    edge_probabilities, reverse=True, key=itemgetter(0)
+                )
 
-        prediction = max(scores, key=scores.get)  # type: ignore
+                # Calculate depth
+                depth = round(len(self.corpus) * self.depth)
+                if len(sorted_edge_probabilities) >= depth:
+                    # Limit probabilities to 'depth' hyper-parameter
+                    depth_limited = sorted_edge_probabilities[:depth]
 
-        return prediction
+                    # Destructure probabilities and edges
+                    probabilities, edges = list(zip(*depth_limited))
+
+                    # Create ClassificationScore to scores
+                    classification_probabilities.append(
+                        ClassificationScore(
+                            self.targets[classification.cls],
+                            np.prod(probabilities),
+                            edges,
+                        )
+                    )
+
+        if not classification_probabilities:
+            raise MaxDepthExceededError(self.depth)
+
+        prediction = max(classification_probabilities, key=itemgetter(1))
+
+        # Store verbose prediction with probability and edges
+        self.predictions.append(prediction)
+
+        return prediction.cls
 
     @staticmethod
     def _score_edge(
@@ -243,7 +279,7 @@ class WBN(object):
         # L: Class (classification)
         # P: Parent (parent node word in edge)
         # C: Child (child node word in edge)
-        # wp: Parent word weight of key
+        # wp: Parent word weight of keywords
         # wc: Child word weight of keywords
         cls_given_parent = parent.positive / parent.total  # Pr(L | P)
         cls_given_child = child.positive / child.total  # Pr(L | C)

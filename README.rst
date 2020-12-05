@@ -6,17 +6,22 @@ wbn
 .. image:: https://img.shields.io/pypi/v/wbn.svg
         :target: https://pypi.python.org/pypi/wbn
 
-.. image:: https://img.shields.io/travis/leonkozlowski/wbn.svg
-        :target: https://travis-ci.com/leonkozlowski/wbn
+.. image:: https://github.com/leonkozlowski/wbn/workflows/build/badge.svg
+        :target: https://github.com/leonkozlowski/wbn
 
 .. image:: https://readthedocs.org/projects/wbn/badge/?version=latest
         :target: https://wbn.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
-
 .. image:: https://pyup.io/repos/github/leonkozlowski/wbn/shield.svg
-     :target: https://pyup.io/repos/github/leonkozlowski/wbn/
-     :alt: Updates
+        :target: https://pyup.io/repos/github/leonkozlowski/wbn/
+        :alt: Updates
+
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+        :target: https://github.com/psf/black
+
+.. image:: http://www.mypy-lang.org/static/mypy_badge.svg
+        :target: http://mypy-lang.org/
 
 
 
@@ -62,7 +67,7 @@ Building, training, and testing `WBN`
     from sklearn.model_selection import train_test_split
 
     # Import WBN
-    from wbn import WBN
+    from wbn.classifier import WBN
     from wbn.sample.datasets import load_pr_newswire
 
 

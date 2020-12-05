@@ -9,7 +9,7 @@ import pytest
 from tests.data.sample import SAMPLE_DATASET
 from wbn.classifier import WBN
 from wbn.errors import InstanceCountError, MaxDepthExceededError
-from sample.datasets import load_pr_newswire
+from wbn.sample.datasets import load_pr_newswire
 
 
 class TestWBN(TestCase):

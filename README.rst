@@ -3,9 +3,6 @@ wbn
 ===
 
 
-.. image:: https://img.shields.io/pypi/v/wbn.svg
-        :target: https://pypi.python.org/pypi/wbn
-
 .. image:: https://github.com/leonkozlowski/wbn/workflows/build/badge.svg
         :target: https://github.com/leonkozlowski/wbn
 
@@ -44,11 +41,6 @@ From source
     $ python3.8 -m venv venv
     $ pip install -e .
 
-From Build
-
-.. code-block:: bash
-
-    $ pip install wbn
 
 Usage
 -----

@@ -62,7 +62,7 @@ Building, training, and testing `WBN`
     from sklearn.model_selection import train_test_split
 
     # Import WBN
-    from wbn import WBN
+    from wbn.classifier import WBN
     from wbn.sample.datasets import load_pr_newswire
 
 

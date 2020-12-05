@@ -26,11 +26,71 @@ Weighted Bayesian Network Text Classification
 * Free software: MIT license
 * Documentation: https://wbn.readthedocs.io.
 
+Installation
+------------
 
-Features
---------
+From source
 
-* TODO
+.. code-block:: bash
+
+    $ git clone https://github.com/leonkozlowski/wbn.git
+    $ cd wbn
+
+    $ python3.8 -m venv venv
+    $ pip install -e .
+
+From Build
+
+.. code-block:: bash
+
+    $ pip install wbn
+
+Usage
+-----
+
+Building, training, and testing `WBN`
+
+.. code-block:: python
+
+    from sklearn.metrics import (
+        accuracy_score,
+        classification_report,
+        confusion_matrix,
+        recall_score,
+        precision_score,
+    )
+    from sklearn.model_selection import train_test_split
+
+    # Import WBN
+    from wbn import WBN
+    from wbn.sample.datasets import load_pr_newswire
+
+
+    # Build the model
+    wbn = WBN()
+
+    # Load a sample dataset
+    pr_newswire = load_pr_newswire()
+
+    # Train/test split
+    x_train, x_test, y_train, y_test = train_test_split(
+        pr_newswire.data, pr_newswire.target, test_size=0.2
+    )
+
+    # Fit the model
+    wbn.fit(x_train, y_train)
+
+    # Testing the model
+    red = wbn.predict(x_test)
+
+    # Reverse encode the labels
+    y_pred = wbn.reverse_encode(target=pred)
+
+    # Calculate key metrics
+    precision = precision_score(y_test, y_pred, average="weighted")
+    recall = recall_score(y_test, y_pred, average="weighted")
+    accuracy = accuracy_score(y_test, y_pred)
+
 
 Credits
 -------

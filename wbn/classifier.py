@@ -1,4 +1,4 @@
-"""Weighted Bayesian Network Chain Classifier."""
+"""Weighted Bayesian Network Text Classifiaction Model."""
 import itertools
 import logging
 from collections import Counter, defaultdict

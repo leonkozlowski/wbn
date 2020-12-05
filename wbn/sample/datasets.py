@@ -1,4 +1,5 @@
 """Sample Dataset for WBN."""
+import os
 import pickle
 
 from wbn.object import Document, DocumentData, Documents
@@ -7,7 +8,10 @@ from wbn.object import Document, DocumentData, Documents
 def load_pr_newswire() -> Documents:
     """Loads sample PRNewswire Dataset."""
     # Load pickle of dataset
-    with open("wbn/sample/data/pr-newswire.pickle", "rb") as infile:
+    module = os.path.dirname(__file__)
+    with open(
+        os.path.join(module, "data", "pr-newswire.pickle"), "rb"
+    ) as infile:
         raw_data = pickle.load(infile)
 
     # De-structure 'data' and 'target'

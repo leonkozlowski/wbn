@@ -8,38 +8,47 @@ import pytest
 
 from tests.data.sample import SAMPLE_DATASET
 from wbn.classifier import WBN
-from wbn.errors import InstanceCountError
+from wbn.errors import InstanceCountError, MaxDepthExceededError
+from wbn.sample.datasets import load_pr_newswire
 
 
 class TestWBN(TestCase):
     """Unit test suite for WBN."""
 
     def setUp(self) -> None:
+        self.sample = load_pr_newswire()
         self.test_wbn = WBN()
 
     def test_fit(self):
         """Unit test for 'fit(...)'."""
         result = self.test_wbn.fit(
-            data=SAMPLE_DATASET.data, target=SAMPLE_DATASET.target
+            data=self.sample.data, target=self.sample.target
         )
 
-        assert len(result) == 2
+        assert len(result) == 5
 
     def test_predict(self):
         """Unit test for 'predict(...)'."""
         assert 2 == 2
 
-    def test_dag_traverse(self):
-        """Unit test for 'dag_traverse(...)'."""
-        assert 3 == 3
+    def test_reverse_encode(self):
+        """Unit test for 'reverse_encode(...)'."""
+        reverse = self.test_wbn.reverse_encode([0, 1])
+
+        assert isinstance(reverse, list)
 
     def test_encode(self):
         """Unit test for '_encode(...)'."""
-        self.test_wbn._encode(SAMPLE_DATASET.target)
+        self.test_wbn._encode(self.sample.target)
 
         assert isinstance(self.test_wbn.targets, dict)
-        assert "program" in self.test_wbn.targets
-        assert "variable" in self.test_wbn.targets
+        assert "cash-dividend" in self.test_wbn.targets
+        assert "merger-acquisition" in self.test_wbn.targets
+
+    def test_evaluate_raises(self):
+        """Unit test for '_evaluate(...)'."""
+        with pytest.raises(MaxDepthExceededError):
+            self.test_wbn._evaluate(SAMPLE_DATASET.data[0])
 
     def test_update(self):
         """Unit test for '_update(...)'."""

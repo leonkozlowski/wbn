@@ -1,4 +1,4 @@
-"""Weighted Bayesian Network Text Classifiaction Model."""
+"""Weighted Bayesian Network Text Classification Model."""
 import itertools
 import logging
 from collections import Counter, defaultdict
@@ -210,6 +210,7 @@ class WBN(object):
                     edge=edge, instance=instance
                 )  # type: ignore
                 if edge_probability:
+                    edge = edge + (1 + edge_probability,)  # Assign edge probability
                     edge_probabilities.append((edge_probability, edge))
 
                 # Sort edge scores by probability

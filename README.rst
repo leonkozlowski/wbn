@@ -50,7 +50,7 @@ Building, training, and testing `WBN`
 .. code-block:: python
 
     from sklearn.metrics import (
-        accuracy_score,
+        f1_score,
         recall_score,
         precision_score,
     )
@@ -76,7 +76,7 @@ Building, training, and testing `WBN`
     wbn.fit(x_train, y_train)
 
     # Testing the model
-    red = wbn.predict(x_test)
+    pred = wbn.predict(x_test)
 
     # Reverse encode the labels
     y_pred = wbn.reverse_encode(target=pred)
@@ -84,7 +84,7 @@ Building, training, and testing `WBN`
     # Calculate key metrics
     precision = precision_score(y_test, y_pred, average="weighted")
     recall = recall_score(y_test, y_pred, average="weighted")
-    accuracy = accuracy_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred, average="weighted")
 
 
 Credits

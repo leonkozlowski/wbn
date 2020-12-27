@@ -49,11 +49,6 @@ Building, training, and testing `WBN`
 
 .. code-block:: python
 
-    from sklearn.metrics import (
-        f1_score,
-        recall_score,
-        precision_score,
-    )
     from sklearn.model_selection import train_test_split
 
     # Import WBN
@@ -81,10 +76,31 @@ Building, training, and testing `WBN`
     # Reverse encode the labels
     y_pred = wbn.reverse_encode(target=pred)
 
-    # Calculate key metrics
-    precision = precision_score(y_test, y_pred, average="weighted")
-    recall = recall_score(y_test, y_pred, average="weighted")
-    f1 = f1_score(y_test, y_pred, average="weighted")
+
+Constructing a new dataset:
+
+.. code-block:: python
+
+    import pickle
+
+    # Import data structures for dataset creation
+    from wbn.object import Document, DocumentData, Documents
+
+    # Load your dataset from csv or pickle
+    with open("dataset.pickle"), "rb") as infile:
+        raw_data = pickle.load(infile)
+
+    # De-structure 'data' and 'target'
+    data = raw_data.get("data")
+    target = raw_data.get("target")
+
+    # Construct Document's for each data/target entry
+    documents = Documents(
+        [
+            Document(DocumentData(paragraphs, keywords), target[idx])
+            for idx, (paragraphs, keywords) in enumerate(data)
+        ]
+    )
 
 
 Credits

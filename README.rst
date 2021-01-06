@@ -41,6 +41,12 @@ From source
     $ python3.8 -m venv venv
     $ pip install -e .
 
+From build
+
+.. code-block:: bash
+
+    $ pip install wbn
+
 
 Usage
 -----
